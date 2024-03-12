@@ -1,0 +1,108 @@
+import pprint
+import re
+from dataclasses import dataclass
+from datetime import datetime
+from pathlib import Path
+from typing import Self
+
+import orjson
+
+from blueskycrawler.db.model import Like, Media, User
+from blueskycrawler.util import find_values, to_jst
+
+
+@dataclass(frozen=True)
+class FetchedInfo:
+    like: Like
+    user: User
+    media_list: list[Media]
+
+    def get_records(self) -> list[tuple[Like, User, Media]]:
+        return [(self.like, self.user, media) for media in self.media_list]
+
+    @classmethod
+    def create(cls, fetched_dict: dict, instance_name: str = "") -> Self:
+        def normalize_date_at(date_at_str: str) -> str:
+            result = to_jst(datetime.fromisoformat(date_at_str)).isoformat()
+            if result.endswith("+00:00"):
+                result = result[:-6]
+            return result
+
+        registered_at = datetime.now().isoformat()
+        post_dict = find_values(fetched_dict, "post", True, [""])
+        author_dict = find_values(post_dict, "author", True, [""])
+        record_dict = find_values(post_dict, "record", True, [""])
+
+        embed_dict, record_embed_dict = {}, {}
+        media_list_1, media_list_2 = [], []
+        try:
+            embed_dict = find_values(post_dict, "embed", True, [""])
+            record_embed_dict = find_values(record_dict, "embed", True, [""])
+            media_list_1 = find_values(embed_dict, "images", True, [""])
+            media_list_2 = find_values(record_embed_dict, "images", True, [""])
+        except ValueError:
+            raise ValueError("Like entry has no media.")
+
+        uri: str = find_values(post_dict, "uri", True, [""])
+        post_id = uri.split(r"/")[-1]
+        post_created_at = normalize_date_at(find_values(record_dict, "created_at", True, [""]))
+        user_username = find_values(author_dict, "handle", True, [""])
+
+        media_list = []
+        for media_dict_1, media_dict_2 in zip(media_list_1, media_list_2):
+            media_url: str = find_values(media_dict_1, "fullsize", True, [""])
+            media_alt_text = find_values(media_dict_1, "alt", True, [""])
+            media_id = re.findall(r"^.*/(.+)@.*?$", media_url)[0]
+            media_mime_type = find_values(media_dict_2, "mime_type", True)
+            media_size = find_values(media_dict_2, "size", True)
+            media_created_at = post_created_at
+            media = Media.create({
+                "post_id": post_id,
+                "media_id": media_id,
+                "username": user_username,
+                "alt_text": media_alt_text,
+                "mime_type": media_mime_type,
+                "size": media_size,
+                "url": media_url,
+                "created_at": media_created_at,
+                "registered_at": registered_at,
+            })
+            media_list.append(media)
+
+        user_id = find_values(author_dict, "did", True, [""])
+        post_url = f"https://bsky.app/profile/{user_username}/post/{post_id}"
+        post_text = find_values(record_dict, "text", True, [""])
+        like = Like.create({
+            "post_id": post_id,
+            "user_id": user_id,
+            "url": post_url,
+            "text": post_text,
+            "created_at": post_created_at,
+            "registered_at": registered_at,
+        })
+
+        user_name = find_values(author_dict, "display_name", True, [""]) or user_username
+        user_avatar_url = find_values(author_dict, "avatar", True, [""])
+        user = User.create({
+            "user_id": user_id,
+            "name": user_name,
+            "username": user_username,
+            "avatar_url": user_avatar_url,
+            "registered_at": registered_at,
+        })
+
+        return FetchedInfo(like, user, media_list)
+
+
+if __name__ == "__main__":
+    cache_path = Path("./blueskycrawler/cache/")
+    load_paths: list[Path] = [p for p in cache_path.glob("*bluesky.json*")]
+    if len(load_paths) == 0:
+        pprint.pprint("Cache file is not exist.")
+        exit(-1)
+    load_path: Path = load_paths[-1]
+    fetched_entry_list: list[dict] = orjson.loads(load_path.read_bytes()).get("result")
+    fetched_entry_list = fetched_entry_list["feed"]
+    for entry in fetched_entry_list[:3]:
+        fetched_info = FetchedInfo.create(entry)
+        pprint.pprint(fetched_info)

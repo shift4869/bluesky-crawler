@@ -1,0 +1,49 @@
+[tool.poetry]
+name = "blueskycrawler"
+version = "0.1.0"
+description = "bluesky crawler"
+authors = ["shift <fantasy_world4423-git@yahoo.co.jp>"]
+license = "MIT LICENSE"
+readme = "README.md"
+
+[tool.poetry.dependencies]
+atproto = "^0.0.44"
+coverage = "^7.4.3"
+freezegun = "^1.4.0"
+httpx = "^0.24.1"
+isort = "^5.13.2"
+mock = "^5.1.0"
+orjson = "^3.9.15"
+pycodestyle = "^2.11.1"
+python = ">=3.12,<3.13"
+ruff = "^0.1.15"
+sqlalchemy = "^2.0.28"
+
+[tool.poetry.dev-dependencies]
+
+[tool.isort]
+line_length = 119
+multi_line_output = 9
+
+[tool.ruff]
+exclude = [
+    ".venv",
+    "venv",
+    "__pycache__",
+    ".git",
+]
+line-length = 119
+
+[tool.ruff.lint]
+fixable = ["ALL"]
+select = ["E", "F"]
+ignore = ["F401", "F541", "F841"]
+preview = true
+
+[tool.ruff.format]
+preview = true
+quote-style = "double"
+
+[build-system]
+requires = ["poetry-core"]
+build-backend = "poetry.core.masonry.api"
