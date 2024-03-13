@@ -53,15 +53,16 @@ class Fetcher:
             logger.info(f"Loaded from {str(load_path)}.")
             logger.info("Fetch from cache file -> done")
 
-        def sort_by_created_at(r: dict) -> datetime:
-            try:
-                result = datetime.fromisoformat(r["post"]["record"]["created_at"])
-            except ValueError | TypeError | KeyError:
-                return -1
-            return result
+        # def sort_by_created_at(r: dict) -> datetime:
+        #     try:
+        #         result = datetime.fromisoformat(r["post"]["record"]["created_at"])
+        #     except ValueError | TypeError | KeyError:
+        #         return -1
+        #     return result
 
         post_list = find_values(fetched_entry_list, "feed", True, [""])
-        post_list.sort(key=sort_by_created_at, reverse=False)
+        # post_list.sort(key=sort_by_created_at, reverse=False)
+        post_list.reverse()
 
         logger.info("Create FetchedInfo -> start")
         fetched_info_list = []
