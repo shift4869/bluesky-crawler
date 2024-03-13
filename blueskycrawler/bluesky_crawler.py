@@ -4,9 +4,9 @@ from logging import INFO, getLogger
 from blueskycrawler.crawler.crawler import Crawler
 
 logging.config.fileConfig("./log/logging.ini", disable_existing_loggers=False)
-for name in logging.root.manager.loggerDict:
-    if "blueskycrawler" not in name:
-        getLogger(name).disabled = True
+# for name in logging.root.manager.loggerDict:
+#     if "blueskycrawler" not in name:
+#         getLogger(name).disabled = True
 logger = getLogger(__name__)
 logger.setLevel(INFO)
 
