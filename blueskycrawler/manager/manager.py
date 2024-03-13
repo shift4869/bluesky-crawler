@@ -11,15 +11,25 @@ logger.setLevel(INFO)
 
 
 class BlueskyManager:
+    handle_name: str
     handle: str
     password: str
     client: Client
 
     def __init__(self, config_dict: dict) -> None:
         self.client = Client(base_url="https://bsky.social")
-        self.handle = f"{config_dict["bluesky"]["handle_name"]}.bsky.social"
+        self.handle_name = config_dict["bluesky"]["handle_name"]
+        self.handle = f"{self.handle_name}.bsky.social"
         self.password = config_dict["bluesky"]["password"]
-        response = self.client.login(self.handle, self.password)
+
+        session_file = Path(f"./config/{self.handle_name}_session.txt")
+        session_string = session_file.read_text(encoding="utf8") if session_file.exists() else None
+
+        response = self.client.login(self.handle, self.password, session_string)
+
+        session_string_new = self.client.export_session_string()
+        if session_string != session_string_new:
+            session_file.write_text(session_string_new, encoding="utf8")
 
     def get_actor_likes(self, limit: int = 100) -> dict:
         params = {"actor": self.handle, "limit": limit}
