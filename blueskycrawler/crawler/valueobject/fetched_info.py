@@ -21,7 +21,7 @@ class FetchedInfo:
         return [(self.like, self.user, media) for media in self.media_list]
 
     @classmethod
-    def create(cls, fetched_dict: dict, instance_name: str = "") -> Self:
+    def create(cls, fetched_dict: dict) -> Self:
         def normalize_date_at(date_at_str: str) -> str:
             result = to_jst(datetime.fromisoformat(date_at_str)).isoformat()
             if result.endswith("+00:00"):
