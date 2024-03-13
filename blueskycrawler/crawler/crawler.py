@@ -36,10 +36,14 @@ class Crawler:
         fetched_list: list[FetchedInfo] = self.fetcher.fetch()
         elapsed_time = time.time() - start_time
         logger.info(f"Fetching : {elapsed_time} [sec].")
-        # if len(fetched_list) == 0:
-        #     logger.info("No reaction created from last reaction.")
-        #     logger.info("Crawler run -> done")
-        #     return
+
+        # 直近1000件の取得済メディアと比較し、存在しないメディアのみをDL対象とする
+        # あくまで連続DLを防ぐための荒いチェックのため、厳密ではない
+        DB_LIMIT_MEDIA_NUM = 1000
+        in_db_media = self.media_db.select()
+        if (n := len(in_db_media)) > DB_LIMIT_MEDIA_NUM:
+            in_db_media = in_db_media[n - DB_LIMIT_MEDIA_NUM :]
+        in_db_media_id = [m.media_id for m in in_db_media]
 
         # FetchedInfo をそれぞれのリストに分解
         like_list, user_list, media_list = [], [], []
@@ -47,12 +51,19 @@ class Crawler:
             records = fetched_record.get_records()
             for record in records:
                 note, user, media = record
+                if media.media_id in in_db_media_id:
+                    continue
                 if note not in like_list:
                     like_list.append(note)
                 if user not in user_list:
                     user_list.append(user)
                 if media not in media_list:
                     media_list.append(media)
+
+        if len(media_list) == 0:
+            logger.info("No liked post from last crawl.")
+            logger.info("Crawler run -> done")
+            return
 
         # メディアダウンロード・保存
         logger.info(f"Num of new media is {len(media_list)}.")
