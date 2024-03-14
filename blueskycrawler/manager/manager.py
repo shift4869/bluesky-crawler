@@ -19,8 +19,8 @@ class BlueskyManager:
     def __init__(self, config_dict: dict) -> None:
         self.client = Client(base_url="https://bsky.social")
         self.handle_name = config_dict["bluesky"]["handle_name"]
-        self.handle = f"{self.handle_name}.bsky.social"
         self.password = config_dict["bluesky"]["password"]
+        self.handle = f"{self.handle_name}.bsky.social"
 
         session_file = Path(f"./config/{self.handle_name}_session.txt")
         session_string = session_file.read_text(encoding="utf8") if session_file.exists() else None

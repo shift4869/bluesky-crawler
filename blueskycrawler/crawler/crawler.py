@@ -1,5 +1,5 @@
 import time
-from logging import getLogger
+from logging import INFO, getLogger
 from pathlib import Path
 
 from blueskycrawler.crawler.downloader import Downloader
@@ -10,6 +10,7 @@ from blueskycrawler.db.media_db import MediaDB
 from blueskycrawler.db.user_db import UserDB
 
 logger = getLogger(__name__)
+logger.setLevel(INFO)
 
 
 class Crawler:

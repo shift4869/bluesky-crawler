@@ -11,7 +11,7 @@ logger = getLogger(__name__)
 logger.setLevel(INFO)
 
 
-def main():
+def main() -> None:
     horizontal_line = "-" * 80
     logger.info(horizontal_line)
     logger.info("Bluesky crawler -> start")
