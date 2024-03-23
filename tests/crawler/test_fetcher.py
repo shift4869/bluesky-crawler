@@ -1,4 +1,3 @@
-import shutil
 import sys
 import unittest
 from collections import namedtuple
@@ -7,11 +6,10 @@ from pathlib import Path
 
 import freezegun
 import orjson
-from mock import MagicMock, call, patch
+from mock import patch
 
 from blueskycrawler.crawler.fetcher import Fetcher
 from blueskycrawler.crawler.valueobject.fetched_info import FetchedInfo
-from blueskycrawler.manager.manager import BlueskyManager
 
 
 class TestFetcher(unittest.TestCase):

@@ -15,6 +15,7 @@ logger.setLevel(INFO)
 
 class Crawler:
     fetcher: Fetcher
+    downloader: Downloader
     like_db: LikeDB
     user_db: UserDB
     media_db: MediaDB
@@ -51,11 +52,11 @@ class Crawler:
         for fetched_record in fetched_list:
             records = fetched_record.get_records()
             for record in records:
-                note, user, media = record
+                like, user, media = record
                 if media.media_id in in_db_media_id:
                     continue
-                if note not in like_list:
-                    like_list.append(note)
+                if like not in like_list:
+                    like_list.append(like)
                 if user not in user_list:
                     user_list.append(user)
                 if media not in media_list:
