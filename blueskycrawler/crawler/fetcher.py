@@ -27,7 +27,7 @@ class Fetcher:
         self.cache_path.mkdir(parents=True, exist_ok=True)
         logger.info("Fetcher init -> done")
 
-    def fetch(self):
+    def fetch(self) -> list[FetchedInfo]:
         logger.info("Fetcher fetch -> start")
         fetched_entry_list: list[dict] = []
         if not self.is_debug:
@@ -35,7 +35,7 @@ class Fetcher:
             fetched_entry_list = self.manager.get_actor_likes(limit=100)
             logger.info("Fetch from bluesky API -> done")
 
-            if len(fetched_entry_list) > 0:
+            if len(find_values(fetched_entry_list, "feed", True, [""])) > 0:
                 logger.info("Saving Cache -> start")
                 date_str = datetime.now().strftime("%Y%m%d%H%M%S")  # YYYYMMDDhhmmss
                 cache_filename = f"{date_str}_bluesky.json"
@@ -59,9 +59,9 @@ class Fetcher:
         #     except ValueError | TypeError | KeyError:
         #         return -1
         #     return result
-
-        post_list = find_values(fetched_entry_list, "feed", True, [""])
         # post_list.sort(key=sort_by_created_at, reverse=False)
+
+        post_list: list[dict] = find_values(fetched_entry_list, "feed", True, [""])
         post_list.reverse()
 
         logger.info("Create FetchedInfo -> start")

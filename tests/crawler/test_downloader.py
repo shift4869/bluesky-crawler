@@ -1,11 +1,10 @@
 import shutil
 import sys
 import unittest
-from collections import namedtuple
-from logging import WARNING, getLogger
+from logging import getLogger
 from pathlib import Path
 
-from mock import AsyncMock, MagicMock, call, patch
+from mock import MagicMock, call, patch
 
 from blueskycrawler.crawler.downloader import Downloader
 from blueskycrawler.db.model import Media
