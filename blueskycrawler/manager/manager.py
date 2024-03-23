@@ -27,9 +27,9 @@ class BlueskyManager:
 
         response = self.client.login(self.handle, self.password, session_string)
 
-        session_string_new = self.client.export_session_string()
-        if session_string != session_string_new:
-            session_file.write_text(session_string_new, encoding="utf8")
+        new_session_string = self.client.export_session_string()
+        if session_string != new_session_string:
+            session_file.write_text(new_session_string, encoding="utf8")
 
     def get_actor_likes(self, limit: int = 100) -> dict:
         params = {"actor": self.handle, "limit": limit}

@@ -27,10 +27,11 @@ multi_line_output = 9
 
 [tool.ruff]
 exclude = [
+    "__pycache__",
+    ".coveragerc",
+    ".git",
     ".venv",
     "venv",
-    "__pycache__",
-    ".git",
 ]
 line-length = 119
 
