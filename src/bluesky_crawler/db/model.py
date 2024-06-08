@@ -134,6 +134,7 @@ class Media(Base):
     [id] INTEGER NOT NULL UNIQUE,
     [post_id] TEXT NOT NULL,
     [media_id] TEXT NOT NULL UNIQUE,
+    [media_index] INTEGER NOT NULL,
     [username] TEXT NOT NULL,
     [alt_text] TEXT,
     [mime_type] TEXT NOT NULL,
@@ -149,6 +150,7 @@ class Media(Base):
     id = Column(Integer, primary_key=True)
     post_id = Column(String(256), nullable=False)
     media_id = Column(String(256), nullable=False, unique=True)
+    media_index = Column(Integer, nullable=False)
     username = Column(String(256), nullable=False)
     alt_text = Column(String(512))
     mime_type = Column(String(256), nullable=False)
@@ -161,6 +163,7 @@ class Media(Base):
         self,
         post_id: str,
         media_id: str,
+        media_index: int,
         username: str,
         alt_text: str,
         mime_type: str,
@@ -172,6 +175,7 @@ class Media(Base):
         # self.id = id
         self.post_id = post_id
         self.media_id = media_id
+        self.media_index = media_index
         self.username = username
         self.alt_text = alt_text
         self.mime_type = mime_type
@@ -186,6 +190,7 @@ class Media(Base):
             case {
                 "post_id": post_id,
                 "media_id": media_id,
+                "media_index": media_index,
                 "username": username,
                 "alt_text": alt_text,
                 "mime_type": mime_type,
@@ -194,7 +199,13 @@ class Media(Base):
                 "created_at": created_at,
                 "registered_at": registered_at,
             }:
-                return Media(post_id, media_id, username, alt_text, mime_type, size, url, created_at, registered_at)
+                if media_index <= 0 or 4 < media_index:
+                    # media_index は [1,4] を想定している
+                    # この範囲外はすべて0（エラー値）とする
+                    media_index = 0
+                return Media(
+                    post_id, media_id, media_index, username, alt_text, mime_type, size, url, created_at, registered_at
+                )
             case _:
                 raise ValueError("Unmatch args_dict.")
 
@@ -208,6 +219,7 @@ class Media(Base):
         return {
             "post_id": self.post_id,
             "media_id": self.media_id,
+            "media_index": self.media_index,
             "username": self.username,
             "alt_text": self.alt_text,
             "mime_type": self.mime_type,
@@ -218,7 +230,7 @@ class Media(Base):
         }
 
     def get_filename(self) -> str:
-        ext = ""
+        ext: str = ""
         if re.search(r"^.*?@.+$", (ext1 := self.url)):
             ext = "." + ext1.split("@")[-1]
         elif re.search(r"^.+?/.+$", (ext2 := self.mime_type)):
@@ -229,7 +241,8 @@ class Media(Base):
         if not re.search(r"^\..+$", ext):
             raise ValueError("failed to get filename, invalid extension.")
 
-        return f"{self.post_id}_{self.username}{ext}"
+        filename = f"{self.post_id}_{self.username}_{self.media_index:02}{ext}"
+        return filename
 
 
 if __name__ == "__main__":
