@@ -15,10 +15,11 @@ class TestMediaDB(unittest.TestCase):
         return {
             "post_id": f"post_id_{index}",
             "media_id": f"media_id_{index}",
+            "media_index": 0,
             "username": "dummy_username",
             "alt_text": "dummy_alt_text",
             "mime_type": "dummy_mime_type",
-            "size": "dummy_size",
+            "size": 0,
             "url": "dummy_url",
             "created_at": "dummy_created_at",
             "registered_at": "dummy_registered_at",

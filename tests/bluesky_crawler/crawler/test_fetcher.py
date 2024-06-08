@@ -82,7 +82,7 @@ class TestFetcher(unittest.TestCase):
         config_path = Path("./tests/bluesky_crawler/config/config.json")
         cache_path = Path("./cache/")
 
-        def pre_run(is_debug, fetched_dict_num, error_occur):
+        def pre_run(instance, is_debug, fetched_dict_num, error_occur):
             fetched_dict_list = self.make_fetched_dict_list(fetched_dict_num)
             if error_occur:
                 del fetched_dict_list["feed"][0]["post"]["embed"]
@@ -99,6 +99,7 @@ class TestFetcher(unittest.TestCase):
                 cache_filename = f"{date_str}_bluesky.json"
                 save_path = cache_path / cache_filename
                 save_path.unlink(missing_ok=True)
+                instance.cache_path = Path("./tests/bluesky_crawler/cache/")
 
         def post_run(is_debug, fetched_dict_num, error_occur):
             if not is_debug and fetched_dict_num > 0:
@@ -125,8 +126,8 @@ class TestFetcher(unittest.TestCase):
         ]
 
         for params in params_list:
-            pre_run(params.is_debug, params.fetched_dict_num, params.error_occur)
             instance = Fetcher(config_path, params.is_debug)
+            pre_run(instance, params.is_debug, params.fetched_dict_num, params.error_occur)
             actual = None
             if params.is_debug and params.error_occur:
                 with self.assertRaises(ValueError):

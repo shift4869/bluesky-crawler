@@ -120,7 +120,9 @@ class TestFetchedInfo(unittest.TestCase):
             user_username = find_values(author_dict, "handle", True, [""])
 
             media_list = []
-            for media_dict_1, media_dict_2 in zip(media_list_1, media_list_2):
+            zipped_media_list = zip(media_list_1, media_list_2)
+            for index, zipped_media in enumerate(zipped_media_list):
+                media_dict_1, media_dict_2 = zipped_media
                 media_url: str = find_values(media_dict_1, "fullsize", True, [""])
                 media_alt_text = find_values(media_dict_1, "alt", True, [""])
                 media_id = re.findall(r"^.*/(.+)@.*?$", media_url)[0]
@@ -130,6 +132,7 @@ class TestFetchedInfo(unittest.TestCase):
                 media = Media.create({
                     "post_id": post_id,
                     "media_id": media_id,
+                    "media_index": index + 1,
                     "username": user_username,
                     "alt_text": media_alt_text,
                     "mime_type": media_mime_type,

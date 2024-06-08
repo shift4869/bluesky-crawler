@@ -9,10 +9,11 @@ class TestModelMedia(unittest.TestCase):
         return {
             "post_id": "dummy_post_id",
             "media_id": "dummy_media_id",
+            "media_index": 0,
             "username": "dummy_username",
             "alt_text": "dummy_alt_text",
             "mime_type": "dummy_mime_type",
-            "size": "dummy_size",
+            "size": 0,
             "url": "dummy_url",
             "created_at": "dummy_created_at",
             "registered_at": "dummy_registered_at",
@@ -23,6 +24,7 @@ class TestModelMedia(unittest.TestCase):
         instance = Media(
             params["post_id"],
             params["media_id"],
+            params["media_index"],
             params["username"],
             params["alt_text"],
             params["mime_type"],
@@ -33,6 +35,7 @@ class TestModelMedia(unittest.TestCase):
         )
         self.assertEqual(params["post_id"], instance.post_id)
         self.assertEqual(params["media_id"], instance.media_id)
+        self.assertEqual(params["media_index"], instance.media_index)
         self.assertEqual(params["username"], instance.username)
         self.assertEqual(params["alt_text"], instance.alt_text)
         self.assertEqual(params["mime_type"], instance.mime_type)
@@ -44,6 +47,7 @@ class TestModelMedia(unittest.TestCase):
         another_instance = Media(
             params["post_id"],
             params["media_id"],
+            params["media_index"],
             params["username"],
             params["alt_text"],
             params["mime_type"],
@@ -63,6 +67,7 @@ class TestModelMedia(unittest.TestCase):
         another_instance = Media(
             params["post_id"],
             params["media_id"],
+            params["media_index"],
             params["username"],
             params["alt_text"],
             params["mime_type"],
@@ -83,10 +88,11 @@ class TestModelMedia(unittest.TestCase):
             {
                 "post_id": "dummy_post_id",
                 "media_id": "dummy_media_id",
+                "media_index": 0,
                 "username": "dummy_username",
                 "alt_text": "dummy_alt_text",
                 "mime_type": "dummy_mime_type",
-                "size": "dummy_size",
+                "size": 0,
                 "url": "dummy_url",
                 "created_at": "dummy_created_at",
                 "registered_at": "dummy_registered_at",
@@ -98,19 +104,19 @@ class TestModelMedia(unittest.TestCase):
         params = self.get_params()
         params |= {"url": f"https://bsky.app/profile/{params["username"]}/post/{params["post_id"]}@jpeg"}
         instance = Media.create(params)
-        expect = f"{params["post_id"]}_{params["username"]}.jpeg"
+        expect = f"{params["post_id"]}_{params["username"]}_{params["media_index"]:02}.jpeg"
         self.assertEqual(expect, instance.get_filename())
 
         params |= {"url": f"https://bsky.app/profile/{params["username"]}/post/{params["post_id"]}"}
         params |= {"mime_type": "image/jpeg"}
         instance = Media.create(params)
-        expect = f"{params["post_id"]}_{params["username"]}.jpeg"
+        expect = f"{params["post_id"]}_{params["username"]}_{params["media_index"]:02}.jpeg"
         self.assertEqual(expect, instance.get_filename())
 
         params |= {"url": f"https://bsky.app/profile/{params["username"]}/post/{params["post_id"]}"}
         params |= {"mime_type": "image/x-jpeg"}
         instance = Media.create(params)
-        expect = f"{params["post_id"]}_{params["username"]}.jpeg"
+        expect = f"{params["post_id"]}_{params["username"]}_{params["media_index"]:02}.jpeg"
         self.assertEqual(expect, instance.get_filename())
 
         params |= {"url": "dummy_url"}
