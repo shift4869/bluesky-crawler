@@ -54,7 +54,7 @@ class Downloader:
                 filepath,
             ]
             result = await asyncio.create_subprocess_exec(*command)
-            await result.wait()
+            await result.communicate()
 
     async def excute(self, media_list: list[Media]) -> None:
         task_list = [self.worker(media) for media in media_list]
