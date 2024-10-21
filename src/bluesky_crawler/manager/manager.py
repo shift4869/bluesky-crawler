@@ -5,6 +5,7 @@ from pathlib import Path
 
 import orjson
 from atproto import Client
+from atproto_client.exceptions import BadRequestError
 
 logger = getLogger(__name__)
 logger.setLevel(INFO)
@@ -25,7 +26,11 @@ class BlueskyManager:
         session_file = Path(f"./config/{self.handle_name}_session.txt")
         session_string = session_file.read_text(encoding="utf8") if session_file.exists() else None
 
-        response = self.client.login(self.handle, self.password, session_string)
+        try:
+            response = self.client.login(self.handle, self.password, session_string)
+        except BadRequestError:
+            self.client = Client(base_url="https://bsky.social")
+            response = self.client.login(self.handle, self.password)
 
         new_session_string = self.client.export_session_string()
         if session_string != new_session_string:

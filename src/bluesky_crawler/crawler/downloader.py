@@ -1,5 +1,4 @@
 import asyncio
-import pprint
 from logging import INFO, getLogger
 from pathlib import Path
 
@@ -26,18 +25,36 @@ class Downloader:
         logger.info("Downloader init -> done")
 
     async def worker(self, media: Media) -> None:
-        transport = httpx.AsyncHTTPTransport(retries=3)
-        async with httpx.AsyncClient(timeout=httpx.Timeout(5, read=60), transport=transport) as client:
-            url = media.url
+        if "image" in media.mime_type:
+            transport = httpx.AsyncHTTPTransport(retries=3)
+            async with httpx.AsyncClient(timeout=httpx.Timeout(5, read=60), transport=transport) as client:
+                url = media.url
+                filename = media.get_filename()
+                filepath = self.save_base_path / filename
+                if filepath.exists():
+                    return
+
+                response = await client.get(url)
+                response.raise_for_status()
+
+                filepath.write_bytes(response.content)
+        elif "video" in media.mime_type:
             filename = media.get_filename()
             filepath = self.save_base_path / filename
-            if filepath.exists():
-                return
-
-            response = await client.get(url)
-            response.raise_for_status()
-
-            filepath.write_bytes(response.content)
+            command = [
+                "ffmpeg",
+                "-i",
+                media.url,
+                "-loglevel",
+                "fatal",
+                "-c",
+                "copy",
+                "-bsf:a",
+                "aac_adtstoasc",
+                filepath,
+            ]
+            result = await asyncio.create_subprocess_exec(*command)
+            await result.wait()
 
     async def excute(self, media_list: list[Media]) -> None:
         task_list = [self.worker(media) for media in media_list]
@@ -52,6 +69,7 @@ class Downloader:
 
 if __name__ == "__main__":
     import logging.config
+    import pprint
 
     logging.config.fileConfig("./log/logging.ini", disable_existing_loggers=False)
     config_path = Path("./config/config.json")
@@ -60,6 +78,7 @@ if __name__ == "__main__":
     media_dict1 = {
         "post_id": "3knbivgufgs2l",
         "media_id": "bafkreifeip6p4vymtovslb7gluthqlz35rkvdopfxzzggscwtm7iwuvkne",
+        "media_index": 1,
         "username": "username1.bsky.social",
         "alt_text": "alt_text_1",
         "mime_type": "image/jpeg",
@@ -73,6 +92,7 @@ if __name__ == "__main__":
     media_dict2 = {
         "post_id": "3kks7hg4ffu22",
         "media_id": "bafkreihx2won24vnhdwwmppegwndxcueyyt6endadwer3z2jhx7owz5oqu",
+        "media_index": 1,
         "username": "username2.bsky.social",
         "alt_text": "alt_text_2",
         "mime_type": "image/jpeg",

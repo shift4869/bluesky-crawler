@@ -6,16 +6,16 @@ authors = [
     { name = "shift" }
 ]
 dependencies = [
-    "atproto>=0.0.48",
-    "coverage>=7.5.3",
+    "atproto>=0.0.54",
+    "coverage>=7.6.4",
     "freezegun>=1.5.1",
-    "httpx==0.26.0",
+    "httpx>=0.26.0",
     "isort>=5.13.2",
     "mock>=5.1.0",
-    "orjson>=3.10.3",
-    "pycodestyle>=2.11.1",
-    "ruff>=0.4.8",
-    "sqlalchemy>=2.0.30",
+    "orjson>=3.10.9",
+    "pycodestyle>=2.12.1",
+    "ruff>=0.7.0",
+    "sqlalchemy>=2.0.36",
 ]
 readme = "README.md"
 requires-python = ">= 3.12"
@@ -51,6 +51,11 @@ quote-style = "double"
 [tool.rye]
 managed = true
 dev-dependencies = []
+
+[tool.rye.scripts]
+unittest = "python -m unittest"
+coverage_html = {chain = ["coverage run --source . -m unittest discover", "coverage html"]}
+copy_to_run = "./copy_to_run.bat"
 
 [tool.hatch.metadata]
 allow-direct-references = true

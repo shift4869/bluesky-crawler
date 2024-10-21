@@ -89,7 +89,9 @@ class FetchedInfo:
         # メディアが含まれる部分を抽出する
         embed_dict, record_embed_dict = {}, {}
         media_list_1, media_list_2 = [], []
+        is_no_image, is_no_video = False, False
         try:
+            # 画像を含むか調べる
             # post 直下の embed (直リンクとaltテキストが含まれる)と
             # record 配下の embed (mime_type と size が含まれる)がそれぞれ存在するか確認する
             embed_dict = find_values(post_dict, "embed", True, [""])
@@ -97,6 +99,28 @@ class FetchedInfo:
             media_list_1 = find_values(embed_dict, "images", True, [""])
             media_list_2 = find_values(record_embed_dict, "images", True, [""])
         except ValueError:
+            # 画像は含まれていなかった
+            is_no_image = True
+
+        if is_no_image:
+            # 動画を含むか調べる
+            try:
+                # post 直下の embed
+                embed_dict = find_values(post_dict, "embed", True, [""])
+                record_embed_dict = find_values(record_dict, "embed", True, [""])
+                playlist = find_values(embed_dict, "playlist", True, [""])
+                alt_text = find_values(embed_dict, "alt", True, [""])
+                mime_type = find_values(record_embed_dict, "mime_type", True, ["video"])
+                size = find_values(record_embed_dict, "size", True, ["video"])
+
+                alt_text = alt_text if alt_text else ""
+                media_list_1 = [{"fullsize": playlist, "alt": alt_text}]
+                media_list_2 = [{"mime_type": mime_type, "size": size}]
+            except ValueError:
+                # 動画は含まれていなかった
+                is_no_video = True
+
+        if is_no_image and is_no_video:
             # メディアが含まれていなかった → エラー
             raise ValueError("Like entry has no media.")
 
@@ -115,7 +139,12 @@ class FetchedInfo:
             media_dict_1, media_dict_2 = zipped_media
             media_url: str = find_values(media_dict_1, "fullsize", True, [""])
             media_alt_text = find_values(media_dict_1, "alt", True, [""])
-            media_id = re.findall(r"^.*/(.+)@.*?$", media_url)[0]
+            media_id = (
+                re.findall(r"^.*/(.+)/playlist.m3u8$", media_url)
+                if "playlist.m3u8" in media_url
+                else re.findall(r"^.*/(.+)@.*?$", media_url)
+            )
+            media_id = media_id[0]
             media_mime_type = find_values(media_dict_2, "mime_type", True)
             media_size = find_values(media_dict_2, "size", True)
             media_created_at = post_created_at
