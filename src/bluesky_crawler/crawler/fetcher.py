@@ -70,7 +70,7 @@ class Fetcher:
             try:
                 fetched_info = FetchedInfo.create(entry)
             except Exception as e:
-                logger.info(e)
+                logger.debug(e)
                 continue
             fetched_info_list.append(fetched_info)
         logger.info("Create FetchedInfo -> done")

@@ -41,6 +41,8 @@ class Downloader:
         elif "video" in media.mime_type:
             filename = media.get_filename()
             filepath = self.save_base_path / filename
+            if filepath.exists():
+                return
             command = [
                 "ffmpeg",
                 "-i",
