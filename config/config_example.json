@@ -1,0 +1,10 @@
+{
+  "bluesky": {
+    "handle_name": "{handle_name}(←{handle_name is here string}.bsky.social)",
+    "password": "{password}"
+  },
+  "general": {
+    "save_base_path": "%userprofile%/Pictures/BC_Bluesky",
+    "save_num": 300
+  }
+}
