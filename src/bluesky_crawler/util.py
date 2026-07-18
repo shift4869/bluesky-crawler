@@ -45,3 +45,18 @@ def to_jst(gmt: datetime) -> datetime:
         raise ValueError("args is not datetime.")
     jst = gmt + timedelta(hours=9)
     return jst
+
+
+def normalize_date_at(date_at_str: str) -> str:
+    """日時文字列を日本時間に変換する
+
+    Args:
+        date_at_str (str): ISOフォーマットの日時文字列(UTC)
+
+    Returns:
+        str: ISOフォーマットの日時文字列(JST)
+    """
+    result = to_jst(datetime.fromisoformat(date_at_str)).isoformat()
+    if result.endswith("+00:00"):
+        result = result[:-6]
+    return result

@@ -53,14 +53,6 @@ class Fetcher:
             logger.info(f"Loaded from {str(load_path)}.")
             logger.info("Fetch from cache file -> done")
 
-        # def sort_by_created_at(r: dict) -> datetime:
-        #     try:
-        #         result = datetime.fromisoformat(r["post"]["record"]["created_at"])
-        #     except ValueError | TypeError | KeyError:
-        #         return -1
-        #     return result
-        # post_list.sort(key=sort_by_created_at, reverse=False)
-
         post_list: list[dict] = find_values(fetched_entry_list, "feed", True, [""])
         post_list.reverse()
 
@@ -70,9 +62,12 @@ class Fetcher:
             try:
                 fetched_info = FetchedInfo.create(entry)
             except Exception as e:
-                logger.debug(e)
+                logger.warning(e)
                 continue
-            fetched_info_list.append(fetched_info)
+            # メディア情報を持つレコードのみ格納
+            if fetched_info.has_media:
+                fetched_info_list.append(fetched_info)
+        logger.info(f"Created FetchedInfo entry has_media/all = {len(fetched_info_list)}/{len(post_list)}.")
         logger.info("Create FetchedInfo -> done")
         logger.info("Fetcher fetch -> done")
         return fetched_info_list

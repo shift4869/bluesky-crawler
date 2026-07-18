@@ -229,12 +229,21 @@ class Media(Base):
             "registered_at": self.registered_at,
         }
 
-    def get_filename(self) -> str:
+    def get_filename(self, data: bytes = b"") -> str:
         ext: str = ""
-        if re.search(r"^.*?@.+$", (ext1 := self.url)):
-            ext = "." + ext1.split("@")[-1]
-        elif re.search(r"^.+?/.+$", (ext2 := self.mime_type)):
-            ext = "." + ext2.split("/")[1]
+        if "image" in self.mime_type:
+            if not isinstance(data, bytes) or len(data) < 12:
+                ext = ".webp"  # デフォルト値
+            elif data[:4] == b"RIFF" and data[8:12] == b"WEBP":
+                ext = ".webp"
+            elif data.startswith(b"\xff\xd8\xff"):
+                ext = ".jpg"
+            elif data.startswith(b"\x89PNG\r\n\x1a\n"):
+                ext = ".png"
+            elif data.startswith(b"GIF87a") or data.startswith(b"GIF89a"):
+                ext = ".gif"
+        elif "video" in self.mime_type:
+            ext = "." + self.mime_type.split("/")[1]
             if ext.startswith(".x-"):
                 ext = "." + ext[3:]
 

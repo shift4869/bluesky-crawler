@@ -8,7 +8,7 @@ from typing import Self
 import orjson
 
 from bluesky_crawler.db.model import Like, Media, User
-from bluesky_crawler.util import find_values, to_jst
+from bluesky_crawler.util import find_values, normalize_date_at
 
 
 @dataclass(frozen=True)
@@ -20,13 +20,13 @@ class FetchedInfo:
     def __post_init__(self) -> None:
         """引数チェック
 
-        media_list は空リストは許容しない
+        media_list は空リストは許容する
+        その場合、メディア情報を含まないレコードとなり has_media が False になる
 
         Raises:
             ValueError: like が Like インスタンスでない
             ValueError: user が User インスタンスでない
             ValueError: media_list がリストでない
-            ValueError: media_list が空リスト
             ValueError: media_list 内に Media インスタンス以外の要素が含まれる
         """
         if not isinstance(self.like, Like):
@@ -35,10 +35,19 @@ class FetchedInfo:
             raise ValueError("Argument user is not User type.")
         if not isinstance(self.media_list, list):
             raise ValueError("Argument media_list is not list.")
-        if len(self.media_list) == 0:
-            raise ValueError("Argument media_list is empty.")
         if not all([isinstance(media, Media) for media in self.media_list]):
             raise ValueError("Argument media_list is include not Media type element.")
+
+    @property
+    def has_media(self) -> bool:
+        """メディア情報を持っているか を bool で返す
+
+        Returns:
+            bool: media_list がリストかつ空でないなら True, そうでないならば False
+        """
+        if not isinstance(self.media_list, list):
+            return False
+        return True if self.media_list else False
 
     def get_records(self) -> list[tuple[Like, User, Media]]:
         """レコードをタプルのリストにして返す
@@ -65,26 +74,44 @@ class FetchedInfo:
             Self: fetched_info インスタンス
         """
 
-        def normalize_date_at(date_at_str: str) -> str:
-            """日時文字列を日本時間に変換する
-
-            Args:
-                date_at_str (str): ISOフォーマットの日時文字列(UTC)
-
-            Returns:
-                str: ISOフォーマットの日時文字列(JST)
-            """
-            result = to_jst(datetime.fromisoformat(date_at_str)).isoformat()
-            if result.endswith("+00:00"):
-                result = result[:-6]
-            return result
-
         # 採用する登録日時を取得
         registered_at = datetime.now().isoformat()
         # fetch データの辞書解析
         post_dict = find_values(fetched_dict, "post", True, [""])
         author_dict = find_values(post_dict, "author", True, [""])
         record_dict = find_values(post_dict, "record", True, [""])
+
+        # post 情報から post_id と created_at を抽出する
+        uri: str = find_values(post_dict, "uri", True, [""])
+        post_id = uri.split(r"/")[-1]
+        post_created_at = normalize_date_at(find_values(record_dict, "created_at", True, [""]))
+
+        # author 情報から username を抽出する
+        user_username = find_values(author_dict, "handle", True, [""])
+
+        # like 作成
+        user_id = find_values(author_dict, "did", True, [""])
+        post_url = f"https://bsky.app/profile/{user_username}/post/{post_id}"
+        post_text = find_values(record_dict, "text", True, [""])
+        like = Like.create({
+            "post_id": post_id,
+            "user_id": user_id,
+            "url": post_url,
+            "text": post_text,
+            "created_at": post_created_at,
+            "registered_at": registered_at,
+        })
+
+        # user 作成
+        user_name = find_values(author_dict, "display_name", True, [""]) or user_username
+        user_avatar_url = find_values(author_dict, "avatar", True, [""])
+        user = User.create({
+            "user_id": user_id,
+            "name": user_name,
+            "username": user_username,
+            "avatar_url": user_avatar_url,
+            "registered_at": registered_at,
+        })
 
         # メディアが含まれる部分を抽出する
         embed_dict, record_embed_dict = {}, {}
@@ -121,16 +148,8 @@ class FetchedInfo:
                 is_no_video = True
 
         if is_no_image and is_no_video:
-            # メディアが含まれていなかった → エラー
-            raise ValueError("Like entry has no media.")
-
-        # post 情報から post_id と created_at を抽出する
-        uri: str = find_values(post_dict, "uri", True, [""])
-        post_id = uri.split(r"/")[-1]
-        post_created_at = normalize_date_at(find_values(record_dict, "created_at", True, [""]))
-
-        # author 情報から username を抽出する
-        user_username = find_values(author_dict, "handle", True, [""])
+            # メディアが含まれていなかった → media_list は空リスト
+            return FetchedInfo(like, user, [])
 
         # media_list 作成
         media_list = []
@@ -139,12 +158,19 @@ class FetchedInfo:
             media_dict_1, media_dict_2 = zipped_media
             media_url: str = find_values(media_dict_1, "fullsize", True, [""])
             media_alt_text = find_values(media_dict_1, "alt", True, [""])
-            media_id = (
-                re.findall(r"^.*/(.+)/playlist.m3u8$", media_url)
+
+            media_id_match = (
+                re.findall(r"([^/]+)/playlist.m3u8$", media_url)
                 if "playlist.m3u8" in media_url
-                else re.findall(r"^.*/(.+)@.*?$", media_url)
+                else re.findall(r"([^/]+)/?$", media_url)
             )
-            media_id = media_id[0]
+            if not (media_id_match and len(media_id_match) > 0):
+                raise ValueError(f"Media id getting is failed, not match in url: {post_url}")
+            matched_str: str = media_id_match[0]
+            if not (isinstance(matched_str, str) and matched_str):
+                raise ValueError(f"Media id getting is failed, must be not empty str: {post_url}")
+            media_id = matched_str
+
             media_mime_type = find_values(media_dict_2, "mime_type", True)
             media_size = find_values(media_dict_2, "size", True)
             media_created_at = post_created_at
@@ -161,30 +187,6 @@ class FetchedInfo:
                 "registered_at": registered_at,
             })
             media_list.append(media)
-
-        # like 作成
-        user_id = find_values(author_dict, "did", True, [""])
-        post_url = f"https://bsky.app/profile/{user_username}/post/{post_id}"
-        post_text = find_values(record_dict, "text", True, [""])
-        like = Like.create({
-            "post_id": post_id,
-            "user_id": user_id,
-            "url": post_url,
-            "text": post_text,
-            "created_at": post_created_at,
-            "registered_at": registered_at,
-        })
-
-        # user 作成
-        user_name = find_values(author_dict, "display_name", True, [""]) or user_username
-        user_avatar_url = find_values(author_dict, "avatar", True, [""])
-        user = User.create({
-            "user_id": user_id,
-            "name": user_name,
-            "username": user_username,
-            "avatar_url": user_avatar_url,
-            "registered_at": registered_at,
-        })
 
         # FetchedInfo インスタンス作成
         return FetchedInfo(like, user, media_list)

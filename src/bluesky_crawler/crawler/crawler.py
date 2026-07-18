@@ -62,8 +62,9 @@ class Crawler:
                 if media not in media_list:
                     media_list.append(media)
 
+        # 新規取得対象が存在しない場合、終了する
         if len(media_list) == 0:
-            logger.info("No liked post from last crawl.")
+            logger.info("No liked post with media from last crawl.")
             logger.info("Crawler run -> done")
             return
 

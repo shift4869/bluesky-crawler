@@ -29,17 +29,18 @@ class Downloader:
             transport = httpx.AsyncHTTPTransport(retries=3)
             async with httpx.AsyncClient(timeout=httpx.Timeout(5, read=60), transport=transport) as client:
                 url = media.url
-                filename = media.get_filename()
-                filepath = self.save_base_path / filename
-                if filepath.exists():
-                    return
 
                 response = await client.get(url)
                 response.raise_for_status()
 
+                filename = media.get_filename(response.content)
+                filepath = self.save_base_path / filename
+                if filepath.exists():
+                    return
+
                 filepath.write_bytes(response.content)
         elif "video" in media.mime_type:
-            filename = media.get_filename()
+            filename = media.get_filename(b"")
             filepath = self.save_base_path / filename
             if filepath.exists():
                 return
